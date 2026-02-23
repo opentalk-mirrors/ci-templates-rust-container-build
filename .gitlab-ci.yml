@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+---
+stages:
+  - lint
+
+include:
+  - project: opentalk/ci/templates/common-lint
+    ref: v1
+    file: .gitlab-ci-template.yml

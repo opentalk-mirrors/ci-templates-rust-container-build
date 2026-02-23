@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
+#
+# SPDX-License-Identifier: EUPL-1.2
+---
+spec:
+  input:
+    docker_file_dir:
+      default: $CI_PROJECT_DIR
+        
+---
+package:container-build-mr:
+  parallel:
+    matrix:
+      - FLAVOR: !reference [.template_vars, FLAVORS]
+  stage: package
+  needs: []
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  image:
+    name: quay.io/buildah/stable:v1.42.0
+    pull_policy: if-not-present
+  before_script:
+    - buildah login -u "$CI_REGISTRY_USER" --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - >
+      IMAGE_TAG=$(
+          echo -n "$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME" |
+          tr -c '[:alnum:]_.-' '_' |
+          sed 's/^[.-]/_/' |
+          cut -c -63
+      )
+    - buildah build -f $[[ inputs.docker_file_dir ]]/Dockerfile-$FLAVOR -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG-$FLAVOR"
+    - buildah push "$CI_REGISTRY_IMAGE:$IMAGE_TAG-$FLAVOR"
+
+package:container-build:
+  parallel:
+    matrix:
+      - FLAVOR: !reference [.template_vars, FLAVORS]
+  stage: package
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+.*$/
+    - if: $CI_PIPELINE_SOURCE == "pipeline"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  image:
+    name: quay.io/buildah/stable:v1.42.0
+    pull_policy: if-not-present
+  before_script:
+    - buildah login -u "$CI_REGISTRY_USER" --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - buildah build -f $[[ inputs.docker_file_dir ]]/Dockerfile-$FLAVOR -t  "$CI_REGISTRY_IMAGE:$FLAVOR-${CI_COMMIT_SHA:0:8}"
+    - buildah push "$CI_REGISTRY_IMAGE:$FLAVOR-${CI_COMMIT_SHA:0:8}"
