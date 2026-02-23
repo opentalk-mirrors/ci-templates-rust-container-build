@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: EUPL-1.2
 ---
 spec:
-  input:
-    docker_file_dir:
+  inputs:
+    dockerfile_dir:
       default: $CI_PROJECT_DIR
-        
+
 ---
 package:container-build-mr:
   parallel:
@@ -31,7 +31,7 @@ package:container-build-mr:
           sed 's/^[.-]/_/' |
           cut -c -63
       )
-    - buildah build -f $[[ inputs.docker_file_dir ]]/Dockerfile-$FLAVOR -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG-$FLAVOR"
+    - buildah build -f $[[ inputs.dockerfile_dir ]]/Dockerfile-$FLAVOR -t $CI_REGISTRY_IMAGE:$IMAGE_TAG-$FLAVOR
     - buildah push "$CI_REGISTRY_IMAGE:$IMAGE_TAG-$FLAVOR"
 
 package:container-build:
@@ -50,5 +50,6 @@ package:container-build:
   before_script:
     - buildah login -u "$CI_REGISTRY_USER" --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-    - buildah build -f $[[ inputs.docker_file_dir ]]/Dockerfile-$FLAVOR -t  "$CI_REGISTRY_IMAGE:$FLAVOR-${CI_COMMIT_SHA:0:8}"
-    - buildah push "$CI_REGISTRY_IMAGE:$FLAVOR-${CI_COMMIT_SHA:0:8}"
+    - IMAGE_TAG=$FLAVOR-$CI_COMMIT_SHORT_SHA
+    - buildah build -f $[[ inputs.dockerfile_dir ]]/Dockerfile-$FLAVOR -t $CI_REGISTRY_IMAGE:$IMAGE_TAG
+    - buildah push "$CI_REGISTRY_IMAGE:$IMAGE_TAG
