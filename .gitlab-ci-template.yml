@@ -18,6 +18,8 @@ package:container-build-mr:
     - if: $CI_PIPELINE_SOURCE == "pipeline"
       when: never
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: manual
+      allow_failure: true
   image:
     name: quay.io/buildah/stable:v1.42.0
     pull_policy: if-not-present
