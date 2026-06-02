@@ -21,7 +21,7 @@ build:tagger-image:
     name: quay.io/buildah/stable:v1.43.0
     pull_policy: if-not-present
   before_script:
-    - buildah login -u "$CI_REGISTRY_USER" --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - echo "$CI_REGISTRY_PASSWORD" | buildah login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
   script:
     # Tag the helper image with a stable identifier matching the template ref
     # so consumers that pin `ref: v2` get a reproducible runtime image.
