@@ -2,8 +2,16 @@
 #
 # SPDX-FileCopyrightText: OpenTalk GmbH <mail@opentalk.eu>
 # SPDX-License-Identifier: EUPL-1.2
-set -xeu
+set -eu
 set -o pipefail
+[[ -n $DEBUG ]] && set -x || true
+
+# Strip a single leading 'v' from each whitespace-separated version token.
+strip_v_prefix() {
+    local tags
+    IFS=" " read -ra tags <<< "$1"
+    echo "${tags[*]/#v/}"
+}
 
 is_latest_major() {
     local version=$1
@@ -19,7 +27,7 @@ is_latest_major() {
             filtered_versions+=("$v")
         fi
     done
-    is_latest "$version" "${filtered_versions[*]}" || return 1
+    is_latest "$version" "${filtered_versions[*]}"
 }
 
 is_latest() {
@@ -28,16 +36,16 @@ is_latest() {
     IFS=" " read -ra versions <<< "$2"
     versions+=("$version")
     latest=$(printf '%s\n' "${versions[@]}" | sort -V | tail -n1)
-    [[ "$version" = "$latest" ]] && return 0
-    return 1
+    [[ "$version" = "$latest" ]]
 }
 
 create_tags() {
-    local ref all_tags flavor default_flavor tag tags rb_major rb_minor
+    local ref all_tags flavor default_flavor default_branch tag tags rb_major rb_minor
     ref=$1
-    all_tags=${2//v/}
+    all_tags=$(strip_v_prefix "$2")
     flavor=$3
     default_flavor=$4
+    default_branch=${5:-main}
 
     # Release branches like `release/v0.33.x` produce tags like `v0.33-dev-alpine` and `v0.33-dev` for the default flavour.
     if [[ "$ref" =~ ^release/v([0-9]+)\.([0-9]+)\.x$ ]]; then
@@ -49,22 +57,21 @@ create_tags() {
         return
     fi
 
-    if [ "$ref" = "main" ]; then
-        tags=()
-        tags+=("dev-$flavor")
+    if [[ $ref = "$default_branch" ]]; then
+        tags=("dev-$flavor")
         [ "$flavor" = "$default_flavor" ] && tags+=("dev")
         echo "${tags[*]}"
         return
     fi
 
-    tag=${ref//v/}
+    tag=${ref#v}
     IFS='.' read -r major minor patch <<< "$tag"
 
     if [[ "$patch" =~ [a-zA-Z].* ]]; then
-        tags=()
         tags=("$major.$minor.$patch-$flavor")
+        tags+=("${tags[@]/#/v}")
         if [ "$flavor" = "$default_flavor" ]; then
-            tags+=("$major.$minor.$patch")
+            tags+=("${tags[@]/%-$flavor/}")
         fi
         echo "${tags[*]}"
         return
@@ -83,7 +90,7 @@ create_tags() {
 
     # When this is the default flavor, create a tag without the flavor for each version
     if [ "$flavor" = "$default_flavor" ]; then
-        tags+=("${tags[@]//-$flavor}")
+        tags+=("${tags[@]/%-$flavor/}")
     fi
 
     echo "${tags[*]}"
