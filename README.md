@@ -6,32 +6,35 @@ container images using Buildah, skopeo and Trivy.
 ## Usage
 
 Include the template in your `.gitlab-ci.yml`.
-Your project must define a `.template_vars` section with the `FLAVORS` matrix:
+Your project must define a `.template_vars` section with the `FLAVORS` matrix
+and the `DEFAULT_FLAVOR` used for untagged image aliases:
 
 ```yaml
 .template_vars:
   FLAVORS:
     - alpine
     - trixie
+  DEFAULT_FLAVOR: trixie
 
 include:
   - project: 'opentalk/ci/templates/rust-container-build'
     ref: v2
     file: '.gitlab-ci-template.yml'
     inputs:
-      default_flavor: trixie
       harbor_namespace_suffix: controller
 ```
 
 The template references `.template_vars.FLAVORS` as the parallel matrix for
-every per-flavor job, so the section is required.
+every per-flavor job and `.template_vars.DEFAULT_FLAVOR` for untagged image
+aliases (e.g. `latest`, `vX.Y.Z`), so both are required.
 
-For a single-image build without flavors, use an empty string:
+For a single-image build without flavors, use an empty string for both:
 
 ```yaml
 .template_vars:
   FLAVORS:
     - ""
+  DEFAULT_FLAVOR: ""
 ```
 
 Each flavor requires a corresponding `Dockerfile-<flavor>` in the configured
@@ -46,10 +49,6 @@ flavor (the prefix is configurable via `trivy_ignore_prefix`).
 ### `dockerfile_dir` (string, default `$CI_PROJECT_DIR`)
 
 Directory containing the Dockerfile(s).
-
-### `default_flavor` (string, default `trixie`)
-
-Flavor used for untagged image aliases (e.g. `latest`, `vX.Y.Z`).
 
 ### `harbor_push_project` (string)
 
@@ -133,6 +132,7 @@ All jobs run in the `package` stage.
 v2 is a breaking change:
 
 - `harbor_namespace_suffix` is a new required input.
+- `DEFAULT_FLAVOR` must be defined in `.template_vars`.
 - Bump the template `ref` to `v2`.
 
 The `.template_vars.FLAVORS` contract is unchanged from v1.
