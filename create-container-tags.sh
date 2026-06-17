@@ -47,19 +47,22 @@ create_tags() {
     default_flavor=$4
     default_branch=${5:-main}
 
+    # Suffix appended to every tag for this flavor. Empty for the flavorless build.
+    local suffix="${flavor:+-$flavor}"
+
     # Release branches like `release/v0.33.x` produce tags like `v0.33-dev-alpine` and `v0.33-dev` for the default flavour.
     if [[ "$ref" =~ ^release/v([0-9]+)\.([0-9]+)\.x$ ]]; then
         rb_major=${BASH_REMATCH[1]}
         rb_minor=${BASH_REMATCH[2]}
-        tags+=("v${rb_major}.${rb_minor}-dev-$flavor")
-        [ "$flavor" = "$default_flavor" ] && tags+=("v${rb_major}.${rb_minor}-dev")
+        tags+=("v${rb_major}.${rb_minor}-dev$suffix")
+        [ -n "$flavor" ] && [ "$flavor" = "$default_flavor" ] && tags+=("v${rb_major}.${rb_minor}-dev")
         echo "${tags[*]}"
         return
     fi
 
     if [[ $ref = "$default_branch" ]]; then
-        tags=("dev-$flavor")
-        [ "$flavor" = "$default_flavor" ] && tags+=("dev")
+        tags=("dev$suffix")
+        [ -n "$flavor" ] && [ "$flavor" = "$default_flavor" ] && tags+=("dev")
         echo "${tags[*]}"
         return
     fi
@@ -68,9 +71,9 @@ create_tags() {
     IFS='.' read -r major minor patch <<< "$tag"
 
     if [[ "$patch" =~ [a-zA-Z].* ]]; then
-        tags=("$major.$minor.$patch-$flavor")
+        tags=("$major.$minor.$patch$suffix")
         tags+=("${tags[@]/#/v}")
-        if [ "$flavor" = "$default_flavor" ]; then
+        if [ -n "$flavor" ] && [ "$flavor" = "$default_flavor" ]; then
             tags+=("${tags[@]/%-$flavor/}")
         fi
         echo "${tags[*]}"
@@ -78,18 +81,18 @@ create_tags() {
     fi
 
     # Always create tags for MAJOR.MINOR.PATCH and MAJOR.MINOR
-    tags=("$major.$minor.$patch-$flavor" "$major.$minor-$flavor")
+    tags=("$major.$minor.$patch$suffix" "$major.$minor$suffix")
 
     # When this is the latest minor for a major branch create a tag for its major branch
-    is_latest_major "$tag" "$all_tags" && tags+=("$major-$flavor")
+    is_latest_major "$tag" "$all_tags" && tags+=("$major$suffix")
     # Add each tag additionally prefixed with 'v'
     tags+=("${tags[@]/#/v}")
 
     # When this is the latest release, create a "latest" tag
-    is_latest "$tag" "$all_tags" && tags+=("latest-$flavor")
+    is_latest "$tag" "$all_tags" && tags+=("latest$suffix")
 
     # When this is the default flavor, create a tag without the flavor for each version
-    if [ "$flavor" = "$default_flavor" ]; then
+    if [ -n "$flavor" ] && [ "$flavor" = "$default_flavor" ]; then
         tags+=("${tags[@]/%-$flavor/}")
     fi
 
