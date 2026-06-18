@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 set -eu
 set -o pipefail
-[[ -n $DEBUG ]] && set -x || true
+[[ -n ${DEBUG:-} ]] && set -x || true
 
 # Strip a single leading 'v' from each whitespace-separated version token.
 strip_v_prefix() {
