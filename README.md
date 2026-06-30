@@ -119,14 +119,6 @@ All jobs run in the `package` stage.
 - Reads `$CI_PROJECT_DIR/<trivy_ignore_prefix><flavor>` and exports it as the
   `TRIVY_IGNORE_STR_<FLAVOR>` dotenv variable.
 
-### `container-scanning`
-
-- **Trigger:** Scheduled pipelines.
-- **Needs:** `package:container-build`, `read-trivy-ignore-file`.
-- Triggers `opentalk/opentalk-devops/scan-container` with the per-flavor image
-  (`$CI_REGISTRY_IMAGE:dev-$FLAVOR`), forwarding `additional_labels` and the
-  Trivy ignore string.
-
 ## Migrating from v1
 
 v2 is a breaking change:

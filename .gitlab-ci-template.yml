@@ -177,31 +177,3 @@ read-trivy-ignore-file:
   artifacts:
     reports:
       dotenv: package.env
-
-container-scanning:
-  parallel:
-    matrix:
-      - FLAVOR: !reference [.template_vars, FLAVORS]
-  needs:
-    - job: package:container-build
-      optional: true
-      parallel:
-        matrix:
-          - FLAVOR: !reference [.template_vars, FLAVORS]
-    - job: read-trivy-ignore-file
-      parallel:
-        matrix:
-          - FLAVOR: !reference [.template_vars, FLAVORS]
-  rules:
-    - if: $CI_PIPELINE_SOURCE == 'schedule'
-  stage: package
-  variables:
-    PIPELINE_FULL_IMAGE_NAME: $CI_REGISTRY_IMAGE:dev-$FLAVOR
-    PIPELINE_PROJECT_WITH_NAMESPACE: $CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
-    PIPELINE_ADDITIONAL_LABELS: $[[ inputs.additional_labels ]]
-    PIPELINE_TRIVY_IGNORE_FILE_STR_VAR: TRIVY_IGNORE_STR_${FLAVOR}
-  trigger:
-    project: opentalk/opentalk-devops/scan-container
-    strategy: depend
-    forward:
-      pipeline_variables: true
