@@ -111,6 +111,9 @@ package:container-create-and-push-tags:
       optional: true
     - job: package:container-build
   rules:
+    # Prevent forks from triggering the downstream pipeline
+    - if: $CI_PROJECT_ROOT_NAMESPACE != "opentalk"
+      when: never
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+.*$/
     - if: $CI_PIPELINE_SOURCE == "pipeline"
       when: never
@@ -149,11 +152,12 @@ push-and-sign-images-to-harbor:
         matrix:
           - FLAVOR: !reference [.template_vars, FLAVORS]
   rules:
+    # Prevent forks from triggering the downstream pipeline
+    - if: $CI_PROJECT_ROOT_NAMESPACE != "opentalk"
+      when: never
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+.*$/
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_BRANCH =~ /^release\/v\d+\.\d+\.x$/
-    # Prevent forks from triggering the downstream pipeline
-    - if: $CI_PROJECT_ROOT_NAMESPACE == "opentalk"
   stage: package
   variables:
     PIPELINE_FULL_IMAGE_NAME: $CI_REGISTRY_IMAGE
